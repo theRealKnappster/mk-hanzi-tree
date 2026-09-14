@@ -47,9 +47,9 @@ type CharacterProgress = Record<Pathway, number> & {
   correct: Record<Pathway, number>;
 };
 
-type WordProgress = Record<WordPathway, number> & {
-  attempts: Record<WordPathway, number>;
-  correct: Record<WordPathway, number>;
+type WordProgress = Record<Pathway, number> & {
+  attempts: Record<Pathway, number>;
+  correct: Record<Pathway, number>;
 };
 
 type StoredProgress = {
@@ -62,6 +62,7 @@ type StoredProgress = {
 
 type Prompt =
   | { pathway: "writing"; itemIndex: number }
+  | { pathway: "writing"; wordIndex: number }
   | { pathway: WordPathway; wordIndex: number };
 
 type WriterInstance = {
@@ -179,6 +180,11 @@ const HANZI: HanziItem[] = [
 
 const HSK1_CHARACTER_COUNT = new Set(HSK1_WORDS.flatMap((word) => [...word.word])).size;
 const wordIndexByText = new Map(HSK_WORDS.map((word, index) => [word.word, index]));
+const hanziIndexByCharacter = new Map(HANZI.map((item, index) => [item.character, index]));
+
+function isWordWritingPrompt(prompt: Prompt | undefined): prompt is { pathway: "writing"; wordIndex: number } {
+  return prompt?.pathway === "writing" && "wordIndex" in prompt;
+}
 
 function wordPrompt(pathway: WordPathway, word: string): Prompt {
   const wordIndex = wordIndexByText.get(word);
@@ -213,10 +219,11 @@ function emptyCharacterProgress(): CharacterProgress {
 
 function emptyWordProgress(): WordProgress {
   return {
+    writing: 0,
     sound: 0,
     meaning: 0,
-    attempts: { sound: 0, meaning: 0 },
-    correct: { sound: 0, meaning: 0 },
+    attempts: { writing: 0, sound: 0, meaning: 0 },
+    correct: { writing: 0, sound: 0, meaning: 0 },
   };
 }
 
@@ -249,12 +256,22 @@ function loadProgress(): StoredProgress {
         const legacy = normalized.characters[word.word];
         if (!legacy) continue;
         normalized.words[word.word] = {
+          writing: 0,
           sound: legacy.sound,
           meaning: legacy.meaning,
-          attempts: { sound: legacy.attempts.sound, meaning: legacy.attempts.meaning },
-          correct: { sound: legacy.correct.sound, meaning: legacy.correct.meaning },
+          attempts: { writing: 0, sound: legacy.attempts.sound, meaning: legacy.attempts.meaning },
+          correct: { writing: 0, sound: legacy.correct.sound, meaning: legacy.correct.meaning },
         };
       }
+    }
+    for (const [wordText, record] of Object.entries(normalized.words)) {
+      const empty = emptyWordProgress();
+      normalized.words[wordText] = {
+        ...empty,
+        ...record,
+        attempts: { ...empty.attempts, ...record.attempts },
+        correct: { ...empty.correct, ...record.correct },
+      };
     }
     return normalized;
   } catch {
@@ -305,9 +322,18 @@ function buildAdaptiveSession(progress: StoredProgress): Prompt[] {
     });
   }
 
-  for (const wordIndex of unlockedWordIndexes(introduceThrough, currentIntroduced >= HSK1_CHARACTER_COUNT)) {
+  const unlockedWords = unlockedWordIndexes(introduceThrough, currentIntroduced >= HSK1_CHARACTER_COUNT);
+  const wordWritingCandidates: Array<{ prompt: Prompt; score: number; tie: number }> = [];
+  for (const wordIndex of unlockedWords) {
     const word = HSK_WORDS[wordIndex];
     const record = progress.words[word.word] ?? emptyWordProgress();
+    if (word.word.length > 1) {
+      wordWritingCandidates.push({
+        prompt: { pathway: "writing", wordIndex },
+        score: record.writing,
+        tie: ((wordIndex + 1) * 13 + progress.sessions) % 29,
+      });
+    }
     (["sound", "meaning"] as WordPathway[]).forEach((pathway, offset) => {
       candidates.push({
         prompt: { pathway, wordIndex },
@@ -317,9 +343,14 @@ function buildAdaptiveSession(progress: StoredProgress): Prompt[] {
     });
   }
 
+  wordWritingCandidates.sort((a, b) => a.score - b.score || a.tie - b.tie);
+  if (wordWritingCandidates[0] && prompts.length < SESSION_LENGTH) prompts.push(wordWritingCandidates[0].prompt);
+  candidates.push(...wordWritingCandidates.slice(1));
+
   candidates.sort((a, b) => a.score - b.score || a.tie - b.tie);
   for (const candidate of candidates) {
     if (prompts.length >= SESSION_LENGTH) break;
+    if (prompts.some((prompt) => JSON.stringify(prompt) === JSON.stringify(candidate.prompt))) continue;
     prompts.push(candidate.prompt);
   }
   return prompts;
@@ -346,12 +377,14 @@ export default function Home() {
   const [showProgress, setShowProgress] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [dark, setDark] = useState(false);
-  const [writerPhase, setWriterPhase] = useState<"watching" | "writing">("watching");
+  const [writerPhase, setWriterPhase] = useState<"watching" | "writing" | "between">("watching");
   const [writerReplay, setWriterReplay] = useState(0);
+  const [wordCharacterIndex, setWordCharacterIndex] = useState(0);
   const [currentStrokeIndex, setCurrentStrokeIndex] = useState(0);
   const [currentStrokeCount, setCurrentStrokeCount] = useState(0);
   const writerTarget = useRef<HTMLDivElement>(null);
   const mistakeCount = useRef(0);
+  const wordMistakeCount = useRef(0);
 
   useEffect(() => {
     setProgress(loadProgress());
@@ -370,7 +403,12 @@ export default function Home() {
   }, [progress]);
 
   const current = session[step];
-  const item = current?.pathway === "writing" ? HANZI[current.itemIndex] : null;
+  const writingWord = isWordWritingPrompt(current) ? HSK_WORDS[current.wordIndex] : null;
+  const activeWordCharacter = writingWord ? [...writingWord.word][wordCharacterIndex] : null;
+  const itemIndex = current?.pathway === "writing"
+    ? ("itemIndex" in current ? current.itemIndex : hanziIndexByCharacter.get(activeWordCharacter ?? ""))
+    : undefined;
+  const item = itemIndex === undefined ? null : HANZI[itemIndex];
   const word = current && current.pathway !== "writing" ? HSK_WORDS[current.wordIndex] : null;
   const tone = item ? TONES[item.tone] : null;
   const currentStroke = item?.strokes ? STROKES[item.strokes[currentStrokeIndex]] : null;
@@ -386,36 +424,46 @@ export default function Home() {
     return seededOptions(word.meaning, optionPool.map((entry) => entry.meaning), current.wordIndex + step);
   }, [current, optionPool, step, word]);
 
-  const recordResult = useCallback((correct: boolean, mistakes = 0) => {
+  const recordResult = useCallback((correct: boolean, characterMistakes = 0, promptComplete = true, promptMistakes = characterMistakes) => {
     if (!current) return;
     setProgress((previous) => {
       if (!previous) return previous;
       const next = structuredClone(previous);
-      const clean = correct && mistakes === 0;
+      const cleanCharacter = correct && characterMistakes === 0;
       if (current.pathway === "writing" && item) {
         const record = next.characters[item.character] ?? emptyCharacterProgress();
         record.attempts.writing += 1;
         if (correct) record.correct.writing += 1;
-        record.writing = Math.max(0, Math.min(3, record.writing + (clean ? 1 : mistakes > 2 ? -1 : 0)));
+        record.writing = Math.max(0, Math.min(3, record.writing + (cleanCharacter ? 1 : characterMistakes > 2 ? -1 : 0)));
         next.characters[item.character] = record;
-        next.introduced = Math.max(next.introduced, current.itemIndex + 1);
+        if ("itemIndex" in current) next.introduced = Math.max(next.introduced, current.itemIndex + 1);
+        if (writingWord && promptComplete) {
+          const wordRecord = next.words[writingWord.word] ?? emptyWordProgress();
+          const cleanWord = correct && promptMistakes === 0;
+          wordRecord.attempts.writing += 1;
+          if (correct) wordRecord.correct.writing += 1;
+          wordRecord.writing = Math.max(0, Math.min(3, wordRecord.writing + (cleanWord ? 1 : promptMistakes > 2 ? -1 : 0)));
+          next.words[writingWord.word] = wordRecord;
+        }
       } else if (current.pathway !== "writing" && word) {
         const record = next.words[word.word] ?? emptyWordProgress();
         record.attempts[current.pathway] += 1;
         if (correct) record.correct[current.pathway] += 1;
-        record[current.pathway] = Math.max(0, Math.min(3, record[current.pathway] + (clean ? 1 : 0)));
+        record[current.pathway] = Math.max(0, Math.min(3, record[current.pathway] + (correct ? 1 : 0)));
         next.words[word.word] = record;
       }
-      next.totalPrompts += 1;
+      if (promptComplete) next.totalPrompts += 1;
       return next;
     });
-  }, [current, item, word]);
+  }, [current, item, word, writingWord]);
 
   const advance = useCallback(() => {
     setFeedback(null);
     mistakeCount.current = 0;
+    wordMistakeCount.current = 0;
     setWriterPhase("watching");
     setCurrentStrokeIndex(0);
+    setWordCharacterIndex(0);
     if (step + 1 >= session.length) {
       setProgress((previous) => previous ? { ...previous, sessions: previous.sessions + 1 } : previous);
       setStep(session.length);
@@ -432,10 +480,11 @@ export default function Home() {
     setFeedback(correct ? "correct" : "retry");
   };
 
+  const spokenText = writingWord?.word ?? item?.character ?? word?.word ?? "";
   const speak = useCallback(() => {
-    if ((!item && !word) || !("speechSynthesis" in window)) return;
+    if (!spokenText || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(item?.character ?? word?.word ?? "");
+    const utterance = new SpeechSynthesisUtterance(spokenText);
     const voices = window.speechSynthesis.getVoices();
     utterance.voice =
       voices.find((voice) => voice.lang.toLowerCase() === "zh-cn") ??
@@ -444,13 +493,13 @@ export default function Home() {
     utterance.lang = "zh-CN";
     utterance.rate = 0.72;
     window.speechSynthesis.speak(utterance);
-  }, [item, word]);
+  }, [spokenText]);
 
   useEffect(() => {
-    if (!started || (!item && !word)) return;
+    if (!started || !spokenText) return;
     const timer = window.setTimeout(speak, 280);
     return () => window.clearTimeout(timer);
-  }, [item, speak, started, step, word]);
+  }, [speak, spokenText, started, step]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -506,9 +555,17 @@ export default function Home() {
             setCurrentStrokeIndex(Math.min(strokeNum + 1, totalStrokes - 1));
           },
           onComplete: () => {
-            const mistakes = mistakeCount.current;
-            recordResult(true, mistakes);
-            setFeedback(mistakes === 0 ? "correct" : "retry");
+            const characterMistakes = mistakeCount.current;
+            const totalMistakes = wordMistakeCount.current + characterMistakes;
+            const hasAnotherCharacter = writingWord && wordCharacterIndex + 1 < [...writingWord.word].length;
+            if (hasAnotherCharacter) {
+              recordResult(true, characterMistakes, false);
+              wordMistakeCount.current = totalMistakes;
+              setWriterPhase("between");
+            } else {
+              recordResult(true, characterMistakes, true, totalMistakes);
+              setFeedback(totalMistakes === 0 ? "correct" : "retry");
+            }
           },
         });
       };
@@ -531,7 +588,14 @@ export default function Home() {
       cancelled = true;
       if (betweenStrokesTimer !== undefined) window.clearTimeout(betweenStrokesTimer);
     };
-  }, [current, dark, item, recordResult, writerReplay]);
+  }, [current, dark, item, recordResult, writerReplay, wordCharacterIndex, writingWord]);
+
+  const continueWord = () => {
+    mistakeCount.current = 0;
+    setWriterPhase("watching");
+    setCurrentStrokeIndex(0);
+    setWordCharacterIndex((value) => value + 1);
+  };
 
   const begin = () => {
     if (!progress) return;
@@ -541,6 +605,8 @@ export default function Home() {
     setShowProgress(false);
     setShowGuide(false);
     setFeedback(null);
+    setWordCharacterIndex(0);
+    wordMistakeCount.current = 0;
   };
 
   const reset = () => {
@@ -557,7 +623,10 @@ export default function Home() {
   const choiceFeedback = feedback && current?.pathway !== "writing";
   const pathwayAverages = (["writing", "sound", "meaning"] as Pathway[]).map((pathway) => {
     const values = pathway === "writing"
-      ? HANZI.slice(0, progress.introduced).map((entry) => progress.characters[entry.character]?.writing ?? 0)
+      ? [
+          ...HANZI.slice(0, progress.introduced).map((entry) => progress.characters[entry.character]?.writing ?? 0),
+          ...Object.values(progress.words).map((entry) => entry.writing ?? 0),
+        ]
       : Object.values(progress.words).map((entry) => entry[pathway]);
     return {
       pathway,
@@ -682,11 +751,24 @@ export default function Home() {
           {current.pathway === "writing" && item ? (
             <div className="writing-prompt">
               <div className="character-meta">
-                <span className="pinyin">{item.pinyin}</span>
-                {tone && <span className="tone-chip"><strong>{tone.name}</strong> · {tone.shape}</span>}
-                <span className="meaning">{item.contextWord === item.character ? item.meaning : `in ${item.contextWord} · ${item.contextMeaning}`}</span>
-                <button className="pronunciation-button" onClick={speak} aria-label={`Hear ${item.character} again`}><Volume2 /></button>
+                <span className="pinyin">{writingWord ? writingWord.syllables.join(" ") : item.pinyin}</span>
+                {!writingWord && tone && <span className="tone-chip"><strong>{tone.name}</strong> · {tone.shape}</span>}
+                <span className="meaning">{writingWord ? writingWord.meaning : item.contextWord === item.character ? item.meaning : `in ${item.contextWord} · ${item.contextMeaning}`}</span>
+                <button className="pronunciation-button" onClick={speak} aria-label={`Hear ${writingWord?.word ?? item.character} again`}><Volume2 /></button>
               </div>
+              {writingWord && (
+                <div className="word-tracing-context" aria-label={`Writing ${writingWord.word}, character ${wordCharacterIndex + 1} of ${[...writingWord.word].length}`}>
+                  <span className="word-tracing-label">Complete the transformation</span>
+                  <div className="word-tracing-characters">
+                    {[...writingWord.word].map((character, index) => (
+                      <div className={index === wordCharacterIndex ? "active" : index < wordCharacterIndex ? "complete" : ""} key={`${character}-${index}`}>
+                        <strong>{character}</strong>
+                        <small>{writingWord.syllables[index]}</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="writing-workspace">
                 <div className="stroke-sidebar">
                   {currentStroke && (
@@ -707,27 +789,30 @@ export default function Home() {
                     {Array.from({ length: strokeCount }, (_, index) => {
                       const strokeKey = item.strokes?.[index];
                       const stroke = strokeKey ? STROKES[strokeKey] : null;
-                      return <span className={index === currentStrokeIndex && !feedback ? "active" : ""} key={`${item.character}-${index}`}>{index + 1}{stroke ? `. ${stroke.hanzi}` : ""}</span>;
+                      return <span className={index === currentStrokeIndex && !feedback && writerPhase !== "between" ? "active" : ""} key={`${item.character}-${index}`}>{index + 1}{stroke ? `. ${stroke.hanzi}` : ""}</span>;
                     })}
                   </div>
-                  <p className="instruction">{writerPhase === "watching" ? `Watch the brush.${item.strokes ? " Name the move." : " Follow every turn."}` : "Your turn. Wield the Pencil."}</p>
+                  <p className="instruction">{writerPhase === "watching" ? `Watch the brush.${item.strokes ? " Name the move." : " Follow every turn."}` : writerPhase === "between" ? `${item.character} is ready.` : writingWord ? `Your turn. Write ${item.character} to build ${writingWord.word}.` : "Your turn. Wield the Pencil."}</p>
                   {writerPhase === "writing" && !feedback && (
                     <button className="replay-button" onClick={() => { setWriterPhase("watching"); setWriterReplay((value) => value + 1); }}>
                       <RotateCcw /> Monkey see, monkey replay
                     </button>
                   )}
+                  {writerPhase === "between" && (
+                    <button className="next-character-button" onClick={continueWord}>Next character</button>
+                  )}
                 </div>
-                <div className="writer-frame"><div className="guide-lines" aria-hidden="true" /><div ref={writerTarget} className="writer-target" aria-label={`Write ${item.character}`} /></div>
+                <div className="writer-frame"><div className="guide-lines" aria-hidden="true" /><div ref={writerTarget} className="writer-target" aria-label={writingWord ? `Write ${item.character} in ${writingWord.word}` : `Write ${item.character}`} /></div>
                 <div className={`insight-column ${feedback ? "has-feedback" : ""}`}>
                   <aside className="learning-note">
                     <span>Monkey sees</span>
-                    <p>{item.note}</p>
+                    <p>{writingWord ? `${item.character} is character ${wordCharacterIndex + 1} of ${writingWord.word}. ${item.note}` : item.note}</p>
                   </aside>
                   {feedback && (
                     <div className={`answer-panel writing-result ${feedback}`} role="status">
                       <div>
                         <strong>{feedback === "correct" ? "Great Sage!" : "A little help from Guanyin."}</strong>
-                        <span>{item.contextPinyin} · {item.contextMeaning}</span>
+                        <span>{writingWord ? `${writingWord.syllables.join(" ")} · ${writingWord.meaning}` : `${item.contextPinyin} · ${item.contextMeaning}`}</span>
                       </div>
                       <button onClick={advance}>Onward west</button>
                     </div>
