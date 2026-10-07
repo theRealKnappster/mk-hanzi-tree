@@ -27,11 +27,35 @@ function ComparisonBox({ row, strokes, overlay, highlight = false, guides = true
   </div>;
 }
 
-function ReviewBox({ row, box }: { row: PracticeRow; box: number }) {
+function ReviewBox({ row, box, onClose }: { row: PracticeRow; box: number; onClose: () => void }) {
   const [overlay, setOverlay] = useState(true);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const element = dialog.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    element?.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      element?.close(); document.body.style.overflow = previousOverflow;
+      previousFocus?.focus({ preventScroll: true });
+    };
+  }, []);
   const strokes = row.boxes[box];
   const notes = row.reference ? compareInk(strokes, row.reference) : [];
-  return <section className="handwriting-review" aria-label="Compare with the model">
+  return <dialog ref={dialog} className="comparison-dialog" aria-label="Compare with the model" onCancel={(event) => { event.preventDefault(); onClose(); }} onKeyDown={(event) => {
+    if (event.key !== "Tab") return;
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]')).filter((element) => element.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }} onClick={(event) => {
+    if (event.target !== event.currentTarget) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose();
+  }}>
+    <div className="comparison-dialog-heading"><h2>Compare with model</h2><button className="icon-button" aria-label="Close comparison" autoFocus onClick={onClose}><X /></button></div>
+    <section className="handwriting-review" aria-label="Character comparison">
     <div className="practice-section-heading"><div><p className="eyebrow">Look, then try again</p><h2>{row.character} · Box {box + 1}</h2></div><label className="practice-check"><input type="checkbox" checked={overlay} onChange={(event) => setOverlay(event.target.checked)} /> Overlay model</label></div>
     <div className="review-pair">
       <div><span>Model</span><div className="practice-box with-guides reference-box">{row.reference ? <ModelCharacter character={row.character} reference={row.reference} /> : <span className="reference-fallback">{row.character}</span>}</div></div>
@@ -42,7 +66,8 @@ function ReviewBox({ row, box }: { row: PracticeRow; box: number }) {
       {notes.slice(1, 3).map((note) => <p key={note.text}>{note.text}</p>)}
       <small>Compare placement and size, not an exact font match. These observations are not a handwriting grade.</small>
     </div> : <p className="practice-muted">No saved comparison model is available for this character. Your handwriting is still saved.</p>}
-  </section>;
+    </section>
+  </dialog>;
 }
 
 function DateComparison({ character, sheets }: { character: string; sheets: PracticeSheet[] }) {
@@ -241,7 +266,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
           {tool === "brush" && <label className="input-mode-label">Pressure<select aria-label="Brush pressure response" value={sensitivity} onChange={(event) => setSensitivity(Number(event.target.value))}><option value={3}>Light touch</option><option value={2}>Balanced</option><option value={1}>Firm</option></select></label>}
         </>}
         <label className="practice-check"><input type="checkbox" checked={construction} onChange={(event) => setConstruction(event.target.checked)} /> Stroke examples</label>
-        <button disabled={!selectedRow || !selected || !hasInk(selectedRow.boxes[selected.box])} className={review ? "active" : ""} onClick={() => setReview((value) => !value)}>Compare with model</button>
+        <button disabled={!selectedRow || !selected || !hasInk(selectedRow.boxes[selected.box])} className={review ? "active" : ""} onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); setReview((value) => !value); }}>Compare with model</button>
         <button onClick={() => void exportImage()} disabled={exportingImage || emptyBoxes(sheet)}><Download /> {exportingImage ? "Creating image…" : "Export image"}</button>
         {editable && <button className="finish-sheet" disabled={emptyBoxes(sheet) || saveState !== "saved"} onClick={() => replace({ ...current.current!, status: "finished", lastSavedAt: new Date().toISOString() })}><Check /> Finish sheet</button>}
       </div>
@@ -263,7 +288,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
           </div>
         </div>)}
       </div></div>
-      {review && selectedRow && selected && hasInk(selectedRow.boxes[selected.box]) && <ReviewBox key={`${sheet.id}-${selectedRow.id}-${selected.box}`} row={selectedRow} box={selected.box} />}
+      {review && selectedRow && selected && hasInk(selectedRow.boxes[selected.box]) && <ReviewBox key={`${sheet.id}-${selectedRow.id}-${selected.box}`} row={selectedRow} box={selected.box} onClose={() => setReview(false)} />}
       <div className="paper-footer"><span>{boxLabel(writtenBoxes(sheet))} · {writtenCharacters(sheet).length} {writtenCharacters(sheet).length === 1 ? "character" : "characters"} practiced</span>{editable && <button onClick={() => setConfirmation("sheet")} disabled={emptyBoxes(sheet)}>Clear all ink</button>}</div>
       {sheet.status === "finished" && <button className="practice-button primary" onClick={() => { if (safeToLeave()) { replace(makeSheet(sheet.rows.map(({ character, pinyin, meaning }) => ({ character, pinyin, meaning })), sheet.layout, sheet.guides)); setSelected(null); setUndo([]); setRedo([]); setReview(false); } }}>Practice these characters again</button>}
     </>}

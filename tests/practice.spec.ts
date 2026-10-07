@@ -61,7 +61,8 @@ test("pressure, autosave, undo/redo, reload and resizing preserve ink and existi
   await page.getByRole("button", { name: "Redo last ink edit" }).click();
   await expect.poll(async () => (await records(page))[0].rows[0].boxes[0].length).toBe(1);
   await page.getByRole("button", { name: "Compare with model", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Compare with the model" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Compare with the model" })).toBeVisible();
+  await page.getByRole("button", { name: "Close comparison" }).click();
   await page.reload();
   await page.getByRole("button", { name: "Open writing practice" }).click();
   await page.locator(".draft-list button").first().click();
@@ -119,6 +120,40 @@ test("landscape writing controls stay on screen when scrolling to the last row",
   await penStroke(lastBox);
   await expect.poll(async () => (await records(page))[0].rows[11].boxes[0].length).toBe(0);
   await page.screenshot({ path: `test-results/${test.info().project.name}-landscape-toolbar.png` });
+});
+
+test("comparison floats over a scrolled sheet and closes without losing position", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open writing practice" }).click();
+  await page.getByLabel("Characters to practice").fill("人");
+  await page.getByLabel("Rows per character").selectOption("12");
+  await page.getByRole("button", { name: "Open the paper" }).click();
+  const lastBox = page.locator('canvas[aria-label="Write 人, box 1"]').last();
+  await lastBox.scrollIntoViewIfNeeded();
+  await penStroke(lastBox);
+  const compare = page.getByRole("button", { name: "Compare with model", exact: true });
+  await expect(compare).toBeEnabled();
+  const before = await page.evaluate(() => window.scrollY);
+  await compare.click();
+  const dialog = page.getByRole("dialog", { name: "Compare with the model" });
+  await expect(dialog).toBeVisible();
+  const rect = await dialog.boundingBox();
+  expect(rect!.y).toBeGreaterThanOrEqual(15);
+  expect(rect!.y + rect!.height).toBeLessThanOrEqual(753);
+  await expect(page.getByRole("button", { name: "Close comparison" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByLabel("Overlay model", { exact: true })).toBeFocused();
+  await page.screenshot({ path: `test-results/${test.info().project.name}-comparison-popup.png` });
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(compare).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(before, 0);
+  await compare.click();
+  await page.getByLabel("Overlay model", { exact: true }).uncheck();
+  await page.getByRole("button", { name: "Close comparison" }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(before, 0);
 });
 
 test("finished sheets are read-only; another session appears in same-character comparisons", async ({ page }) => {

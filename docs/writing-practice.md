@@ -29,6 +29,10 @@ Brush is the default drawing tool. It has a wider pressure-to-width range than F
 
 Each stroke stores its tool and pressure response alongside raw samples, so changing tools or sensitivity does not redraw earlier writing. Strokes saved before brush support keep the original pen rendering. These optional fields also roundtrip through version 1 backups. Erasing accounts for brush width.
 
+## Model comparison
+
+Compare with model opens a floating dialog over the sheet, with model, original handwriting, and an optional overlay. Closing it returns to the same box and scroll position. Landscape shows the observations beside the writing. The close button, Escape, or a tap outside the panel dismisses it; the background is inactive while it is open.
+
 ## Homework image
 
 Open a draft or finished sheet and choose Export image to download a PNG of the whole page. It contains the practice date, model and tracing characters (for copybook layouts), guides, and the original pressure-sensitive handwriting, on white paper without app controls. All rows are included even if they are off screen. Rendering uses a snapshot of the current sheet and does not change it. Images use saved model paths where available and the device's Chinese font as a fallback. The maximum sheet is 1700 × 2650 pixels.
