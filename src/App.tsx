@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import hsk1WordsData from "./data/hsk1.json";
 import hsk2WordsData from "./data/hsk2.json";
+import WritingPractice from "./practice/WritingPractice";
 
 type Pathway = "writing" | "sound" | "meaning";
 type WordPathway = Exclude<Pathway, "writing">;
@@ -376,6 +377,7 @@ export default function Home() {
   const [feedback, setFeedback] = useState<"correct" | "retry" | null>(null);
   const [showProgress, setShowProgress] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [showWritingPractice, setShowWritingPractice] = useState(false);
   const [dark, setDark] = useState(false);
   const [writerPhase, setWriterPhase] = useState<"watching" | "writing" | "between">("watching");
   const [writerReplay, setWriterReplay] = useState(0);
@@ -511,7 +513,7 @@ export default function Home() {
   }, [advance, feedback]);
 
   useEffect(() => {
-    if (!item || current?.pathway !== "writing" || !writerTarget.current) return;
+    if (showWritingPractice || !item || current?.pathway !== "writing" || !writerTarget.current) return;
     let cancelled = false;
     let betweenStrokesTimer: number | undefined;
     writerTarget.current.innerHTML = "";
@@ -588,7 +590,7 @@ export default function Home() {
       cancelled = true;
       if (betweenStrokesTimer !== undefined) window.clearTimeout(betweenStrokesTimer);
     };
-  }, [current, dark, item, recordResult, writerReplay, wordCharacterIndex, writingWord]);
+  }, [current, dark, item, recordResult, writerReplay, wordCharacterIndex, writingWord, showWritingPractice]);
 
   const continueWord = () => {
     mistakeCount.current = 0;
@@ -639,19 +641,24 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <button className="brand" onClick={() => { setStarted(false); setShowProgress(false); setShowGuide(false); }} aria-label="Home">
+        <button className="brand" disabled={showWritingPractice} onClick={() => { setStarted(false); setShowProgress(false); setShowGuide(false); }} aria-label="Home">
           <span className="brand-mark"><img src={`${APP_BASE}/monkey-king-icon.png`} alt="" /></span><span>Hanzi Tree</span>
         </button>
         <div className="top-actions">
-          <button className="icon-button" onClick={() => { setShowGuide(true); setShowProgress(false); }} aria-label="Stroke and tone guide"><BookOpen /></button>
-          <button className="icon-button" onClick={() => { setShowProgress(true); setShowGuide(false); }} aria-label="View progress"><BarChart3 /></button>
+          {!showWritingPractice && <>
+            <button className="icon-button" onClick={() => { setStarted(false); setShowProgress(false); setShowGuide(false); setShowWritingPractice(true); }} aria-label="Writing practice"><PencilLine /></button>
+            <button className="icon-button" onClick={() => { setShowGuide(true); setShowProgress(false); }} aria-label="Stroke and tone guide"><BookOpen /></button>
+            <button className="icon-button" onClick={() => { setShowProgress(true); setShowGuide(false); }} aria-label="View progress"><BarChart3 /></button>
+          </>}
           <button className="icon-button" onClick={() => setDark((value) => !value)} aria-label={dark ? "Use light mode" : "Use dark mode"}>
             {dark ? <Sun /> : <Moon />}
           </button>
         </div>
       </header>
 
-      {showGuide ? (
+      {showWritingPractice ? (
+        <WritingPractice characters={HANZI} onClose={() => setShowWritingPractice(false)} />
+      ) : showGuide ? (
         <section className="guide-view" aria-labelledby="guide-title">
           <button className="close-button" onClick={() => setShowGuide(false)} aria-label="Close guide"><X /></button>
           <p className="eyebrow">The sacred scrolls</p>
@@ -729,6 +736,7 @@ export default function Home() {
           <p className="welcome-copy">The Monkey King mastered 72 transformations. You only need one character at a time.</p>
           <button className="primary-button" onClick={begin}>{progress.sessions ? "Return to the road" : "Begin the journey"}</button>
           <p className="session-note">12 challenges · no heavenly bureaucracy</p>
+          <button className="foundation-link" onClick={() => setShowWritingPractice(true)}><PencilLine /> Open writing practice</button>
           <button className="foundation-link" onClick={() => setShowGuide(true)}><BookOpen /> Open the sacred scrolls</button>
         </section>
       ) : completed ? (

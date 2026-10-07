@@ -27,3 +27,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Character stroke animation and quiz mechanics use the MIT-licensed Hanzi Writer project:
 
 https://github.com/chanind/hanzi-writer
+
+## Character reference geometry
+
+The reference paths loaded through Hanzi Writer, and the unchanged 人 fixture in `tests/fixtures/ren.json` (hanzi-writer-data 2.0.1), come from Hanzi Writer Data / Make Me a Hanzi and are derived from Arphic Technology fonts. They are licensed separately from Hanzi Writer's source under the Arphic Public License. See [licenses/ARPHICPL.TXT](licenses/ARPHICPL.TXT).
+
+https://github.com/chanind/hanzi-writer-data
+
+https://github.com/skishore/makemeahanzi
