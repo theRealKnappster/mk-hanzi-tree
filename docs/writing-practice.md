@@ -28,3 +28,9 @@ The writing toolbar stays at the top of the screen while scrolling a sheet. Land
 Brush is the default drawing tool. It has a wider pressure-to-width range than Fine pen, and the Balanced response reaches its broadest width at half the reported pressure. Light touch needs still less pressure; Firm uses the full pressure range. Input → Pencil identifies the Apple Pencil device, independently of the ink tool. This is pressure-driven brush ink, not a simulation of individual bristles or tilt.
 
 Each stroke stores its tool and pressure response alongside raw samples, so changing tools or sensitivity does not redraw earlier writing. Strokes saved before brush support keep the original pen rendering. These optional fields also roundtrip through version 1 backups. Erasing accounts for brush width.
+
+## Homework image
+
+Open a draft or finished sheet and choose Export image to download a PNG of the whole page. It contains the practice date, model and tracing characters (for copybook layouts), guides, and the original pressure-sensitive handwriting, on white paper without app controls. All rows are included even if they are off screen. Rendering uses a snapshot of the current sheet and does not change it. Images use saved model paths where available and the device's Chinese font as a fallback. The maximum sheet is 1700 × 2650 pixels.
+
+The PNG is for viewing, printing, or attaching to homework. Export backup still downloads JSON for editable restore or transfer; PNGs cannot be imported as practice records.
