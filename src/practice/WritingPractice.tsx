@@ -175,7 +175,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
       const existing = await listSheets();
       const additions = mergeBackup(existing, incoming);
       await putSheets(additions); setSheets(await listSheets());
-      setMessage(`Imported ${additions.length} sheets. Existing sheets were preserved.`);
+      setMessage(!incoming.length ? "This backup contains no practice sheets." : !additions.length ? "All sheets in this backup are already saved. No duplicates added." : `Imported ${additions.length} ${additions.length === 1 ? "sheet" : "sheets"}. Existing sheets were preserved.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not import this backup."); }
   };
 

@@ -151,7 +151,7 @@ test("backup imports do not overwrite sheets; rejected imports leave records unc
   const download = await downloadPromise;
   await download.saveAs(`test-results/${test.info().project.name}-backup.json`);
   await page.locator('input[type="file"]').setInputFiles(`test-results/${test.info().project.name}-backup.json`);
-  await expect(page.getByText("Imported 0 sheets. Existing sheets were preserved.")).toBeVisible();
+  await expect(page.getByText("All sheets in this backup are already saved. No duplicates added.")).toBeVisible();
   expect(await records(page)).toEqual(original);
   await page.locator('input[type="file"]').setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from('{"format":"wrong"}') });
   await expect(page.getByText("Choose a Hanzi Tree handwriting backup (version 1).")).toBeVisible();
