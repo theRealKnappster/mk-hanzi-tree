@@ -93,6 +93,34 @@ test("brush and fine pen retain their own appearance when changing pressure sett
   expect((await records(page))[0].rows[0].boxes[0]).toEqual(original);
 });
 
+test("landscape writing controls stay on screen when scrolling to the last row", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open writing practice" }).click();
+  await page.getByLabel("Characters to practice").fill("人");
+  await page.getByLabel("Rows per character").selectOption("12");
+  await page.getByRole("button", { name: "Open the paper" }).click();
+  const lastBox = page.locator('canvas[aria-label="Write 人, box 1"]').last();
+  await lastBox.scrollIntoViewIfNeeded();
+  const toolbar = page.locator(".paper-toolbar");
+  const rect = await toolbar.boundingBox();
+  expect(rect!.y).toBeGreaterThanOrEqual(0);
+  expect(rect!.y).toBeLessThanOrEqual(9);
+  expect(rect!.height).toBeLessThan(160);
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  expect(scrollBefore).toBeGreaterThan(500);
+  await page.getByRole("button", { name: "Eraser", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Eraser", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Brush", exact: true }).click();
+  expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(scrollBefore, 0);
+  await penStroke(lastBox);
+  await expect.poll(async () => (await records(page))[0].rows[11].boxes[0].length).toBe(1);
+  await page.getByRole("button", { name: "Eraser", exact: true }).click();
+  await penStroke(lastBox);
+  await expect.poll(async () => (await records(page))[0].rows[11].boxes[0].length).toBe(0);
+  await page.screenshot({ path: `test-results/${test.info().project.name}-landscape-toolbar.png` });
+});
+
 test("finished sheets are read-only; another session appears in same-character comparisons", async ({ page }) => {
   await openPractice(page, true);
   await penStroke(page.locator('canvas[aria-label="Write 人, box 2"]'));
