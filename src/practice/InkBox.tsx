@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { drawInk, inkPoint } from "./ink";
+import { drawInk, inkPoint, strokeWidth } from "./ink";
 import type { InkPoint, InkStroke } from "./types";
 
 type Props = {
@@ -7,7 +7,8 @@ type Props = {
   label: string;
   readOnly?: boolean;
   inputMode?: "pencil" | "finger";
-  tool?: "pen" | "eraser";
+  tool?: "brush" | "pen" | "eraser";
+  sensitivity?: number;
   onChange?: (strokes: InkStroke[]) => void;
   onSelect?: () => void;
 };
@@ -60,7 +61,8 @@ export default function InkBox(props: Props) {
           const dx = b.x - a.x, dy = b.y - a.y;
           const lengthSquared = dx * dx + dy * dy;
           const t = lengthSquared ? Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared)) : 0;
-          if (Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy)) < 0.055) { erased.add(stroke.id); break; }
+          const inkRadius = Math.max(strokeWidth(a.pressure, stroke), strokeWidth(b.pressure, stroke)) / 2;
+          if (Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy)) < 0.035 + inkRadius) { erased.add(stroke.id); break; }
         }
       }
     };
@@ -77,7 +79,8 @@ export default function InkBox(props: Props) {
     const begin = (kind: "pointer" | "touch", id: number, x: number, y: number, pressure: number) => {
       if (latest.current.readOnly || active) return false;
       latest.current.onSelect?.();
-      active = { kind, id, stroke: { id: crypto.randomUUID(), startedAt: new Date().toISOString(), points: [] }, start: performance.now(), erasing: latest.current.tool === "eraser" };
+      const style = latest.current.tool === "brush" ? "brush" : "pen";
+      active = { kind, id, stroke: { id: crypto.randomUUID(), startedAt: new Date().toISOString(), points: [], style, ...(style === "brush" ? { sensitivity: latest.current.sensitivity ?? 2 } : {}) }, start: performance.now(), erasing: latest.current.tool === "eraser" };
       add(x, y, pressure); return true;
     };
     const down = (event: PointerEvent) => {

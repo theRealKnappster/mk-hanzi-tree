@@ -20,3 +20,9 @@ The module measures geometry against saved reference paths; it does not judge ca
 Existing lessons retain their localStorage format. Practice uses a separately named IndexedDB database, with a versioned backup format. No update or rollback clears either store. Local backups contain handwriting only; the pre-existing lesson progress is not included in handwriting exports. The repository's checkpoint preserves code, not device data.
 
 Known character references are fetched through Hanzi Writer and saved with rows. A missing model does not prevent writing; comparison is unavailable for that row. Finished sheets use their saved references. Comparing dates explicitly chooses one saved model for both panes.
+
+## Brush ink
+
+Brush is the default drawing tool. It has a wider pressure-to-width range than Fine pen, and the Balanced response reaches its broadest width at half the reported pressure. Light touch needs still less pressure; Firm uses the full pressure range. Input → Pencil identifies the Apple Pencil device, independently of the ink tool. This is pressure-driven brush ink, not a simulation of individual bristles or tilt.
+
+Each stroke stores its tool and pressure response alongside raw samples, so changing tools or sensitivity does not redraw earlier writing. Strokes saved before brush support keep the original pen rendering. These optional fields also roundtrip through version 1 backups. Erasing accounts for brush width.

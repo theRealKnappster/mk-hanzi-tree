@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Download, Eraser, History, PencilLine, Plus, Redo2, Undo2, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Eraser, History, Paintbrush, PencilLine, Plus, Redo2, Undo2, Upload, X } from "lucide-react";
 import InkBox from "./InkBox";
 import ModelCharacter from "./ModelCharacter";
 import { compareInk } from "./ink";
@@ -84,7 +84,8 @@ export default function WritingPractice({ characters, onClose }: { characters: P
   const [guides, setGuides] = useState(true);
   const [rowsPerCharacter, setRowsPerCharacter] = useState(1);
   const [inputMode, setInputMode] = useState<"pencil" | "finger">("pencil");
-  const [tool, setTool] = useState<"pen" | "eraser">("pen");
+  const [tool, setTool] = useState<"brush" | "pen" | "eraser">("brush");
+  const [sensitivity, setSensitivity] = useState(2);
   const [selected, setSelected] = useState<Selection | null>(null);
   const [review, setReview] = useState(false);
   const [construction, setConstruction] = useState(false);
@@ -216,16 +217,18 @@ export default function WritingPractice({ characters, onClose }: { characters: P
     </div> : <>
       <div className="paper-heading"><button className="practice-button" onClick={() => { if (safeToLeave()) { current.current = null; setSheet(null); } }}><ArrowLeft /> New / saved sheets</button><div><strong>{sheet.layout === "copybook" ? "Copybook" : "Blank practice"}</strong><span>{dateLabel(sheet)}{sheet.status === "finished" ? " · Finished" : " · Draft"}</span></div><span className={`save-indicator ${saveState}`} role="status">{saveState === "saving" ? "Saving…" : saveState === "error" ? "Not saved" : "Saved on this device"}</span></div>
       <div className="paper-toolbar" aria-label="Writing tools">
-        {editable && <><div className="tool-group"><button className={tool === "pen" ? "active" : ""} onClick={() => setTool("pen")} aria-pressed={tool === "pen"}><PencilLine /> Pen</button><button className={tool === "eraser" ? "active" : ""} onClick={() => setTool("eraser")} aria-pressed={tool === "eraser"}><Eraser /> Eraser</button></div>
+        {editable && <><div className="tool-group"><button className={tool === "brush" ? "active" : ""} onClick={() => setTool("brush")} aria-pressed={tool === "brush"}><Paintbrush /> Brush</button><button className={tool === "pen" ? "active" : ""} onClick={() => setTool("pen")} aria-pressed={tool === "pen"}><PencilLine /> Fine pen</button><button className={tool === "eraser" ? "active" : ""} onClick={() => setTool("eraser")} aria-pressed={tool === "eraser"}><Eraser /> Eraser</button></div>
           <button onClick={undoEdit} disabled={!undo.length} aria-label="Undo last ink edit"><Undo2 /> Undo</button><button onClick={redoEdit} disabled={!redo.length} aria-label="Redo last ink edit"><Redo2 /> Redo</button>
           <button disabled={!selected || !selectedRow || !hasInk(selectedRow.boxes[selected.box])} onClick={() => setConfirmation("box")}>Clear box</button>
           <label className="input-mode-label">Input<select aria-label="Writing input" value={inputMode} onChange={(event) => setInputMode(event.target.value as typeof inputMode)}><option value="pencil">Pencil</option><option value="finger">Finger / mouse</option></select></label>
+          {tool === "brush" && <label className="input-mode-label">Pressure<select aria-label="Brush pressure response" value={sensitivity} onChange={(event) => setSensitivity(Number(event.target.value))}><option value={3}>Light touch</option><option value={2}>Balanced</option><option value={1}>Firm</option></select></label>}
         </>}
         <label className="practice-check"><input type="checkbox" checked={construction} onChange={(event) => setConstruction(event.target.checked)} /> Stroke examples</label>
         <button disabled={!selectedRow || !selected || !hasInk(selectedRow.boxes[selected.box])} className={review ? "active" : ""} onClick={() => setReview((value) => !value)}>Compare with model</button>
         {editable && <button className="finish-sheet" disabled={emptyBoxes(sheet) || saveState !== "saved"} onClick={() => replace({ ...current.current!, status: "finished", lastSavedAt: new Date().toISOString() })}><Check /> Finish sheet</button>}
       </div>
       <p className="paper-instruction">{editable ? "Write across the boxes. Tap a box to compare it with the model. Scroll outside the writing boxes." : "This finished sheet is kept as you wrote it. Tap a filled box to compare it with the model."}</p>
+      {editable && tool === "brush" && <p className="paper-instruction">Brush ink: ease off for a fine tip, press gently for a broad stroke. Choose Light touch if broad strokes take too much effort.</p>}
       <div className="practice-paper-scroll"><div className="practice-paper">
         {sheet.rows.map((row) => <div className="copybook-row" key={row.id}>
           {construction && <ModelCharacter character={row.character} reference={row.reference} steps fetchMissing={editable} />}
@@ -235,7 +238,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
               {sheet.layout === "blank" && !row.reference && editable && <div className="reference-loader" aria-hidden="true"><ModelCharacter character={row.character} onLoad={(reference) => updateReference(sheet.id, row.id, reference)} /></div>}
               {row.boxes.map((strokes, box) => <div key={box} className={`practice-box ${sheet.guides ? "with-guides" : ""} ${selected?.rowId === row.id && selected.box === box ? "selected" : ""}`}>
                 {sheet.layout === "copybook" && box < 3 && <div className="model-overlay"><ModelCharacter character={row.character} reference={row.reference} faint fetchMissing={editable} /></div>}
-                <InkBox strokes={strokes} readOnly={!editable} inputMode={inputMode} tool={tool} label={`Write ${row.character}, box ${box + 1}`} onSelect={() => setSelected({ rowId: row.id, box })} onChange={(ink) => updateBox({ rowId: row.id, box }, ink)} />
+                <InkBox strokes={strokes} readOnly={!editable} inputMode={inputMode} tool={tool} sensitivity={sensitivity} label={`Write ${row.character}, box ${box + 1}`} onSelect={() => setSelected({ rowId: row.id, box })} onChange={(ink) => updateBox({ rowId: row.id, box }, ink)} />
                 <button className="box-selector" aria-label={`Select ${row.character}, box ${box + 1}`} aria-pressed={selected?.rowId === row.id && selected.box === box} onClick={() => setSelected({ rowId: row.id, box })}>{box + 1}</button>
               </div>)}
             </div>

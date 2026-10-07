@@ -1,5 +1,5 @@
 export type InkPoint = { x: number; y: number; pressure: number; time: number };
-export type InkStroke = { id: string; startedAt: string; points: InkPoint[] };
+export type InkStroke = { id: string; startedAt: string; points: InkPoint[]; style?: "pen" | "brush"; sensitivity?: number };
 export type Reference = { strokes: string[]; medians: number[][][]; source: string };
 export type PracticeCharacter = { character: string; pinyin: string; meaning: string };
 export type PracticeRow = PracticeCharacter & {

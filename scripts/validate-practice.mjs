@@ -47,6 +47,23 @@ test('normalized samples preserve geometry across different screen sizes', () =>
   assert.ok(ink.pressureWidth(.8) > ink.pressureWidth(.1));
 });
 
+test('brush pressure has a visible width range at light pressures and preserves legacy pen ink', () => {
+  const brush = { style: 'brush', sensitivity: 2 };
+  assert.ok(ink.strokeWidth(.35, brush) / ink.strokeWidth(.08, brush) > 4);
+  assert.ok(ink.strokeWidth(.25, { ...brush, sensitivity: 3 }) > ink.strokeWidth(.25, brush));
+  assert.equal(ink.strokeWidth(.4, {}), ink.pressureWidth(.4));
+  assert.equal(ink.strokeWidth(.4, { style: 'pen' }), ink.pressureWidth(.4));
+  assert.ok(ink.strokeWidth(1, brush) < .13, 'maximum remains bounded inside a character box');
+});
+
+test('saved brush appearance roundtrips alongside older pen strokes; invalid settings are rejected', () => {
+  const sheet = types.makeSheet([character], 'copybook', true);
+  sheet.rows[0].boxes[0] = [stroke, { ...stroke, id: 'brush', style: 'brush', sensitivity: 3 }];
+  assert.deepEqual(storage.parseBackup(storage.serializeBackup([sheet])), [sheet]);
+  sheet.rows[0].boxes[0][1].sensitivity = 100;
+  assert.throws(() => storage.parseBackup(storage.serializeBackup([sheet])), /brush settings/);
+});
+
 test('backup roundtrip preserves handwriting pressure, time, dates, and reference geometry', () => {
   let sheet = types.makeSheet([character], 'copybook', true);
   sheet = types.editBox(sheet, sheet.rows[0].id, 0, [stroke]);
