@@ -3,6 +3,7 @@ import { ArrowLeft, Check, Download, Eraser, History, Paintbrush, PencilLine, Pl
 import InkBox from "./InkBox";
 import ModelCharacter from "./ModelCharacter";
 import { compareInk } from "./ink";
+import { renderSheetImage } from "./exportImage";
 import { listSheets, mergeBackup, parseBackup, putSheets, saveSheet, serializeBackup } from "./storage";
 import { editBox, hasInk, localDate, makeSheet, writtenBoxes, writtenCharacters } from "./types";
 import type { InkStroke, PracticeCharacter, PracticeRow, PracticeSheet, Reference } from "./types";
@@ -93,6 +94,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
   const [redo, setRedo] = useState<Edit[]>([]);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
   const [message, setMessage] = useState("");
+  const [exportingImage, setExportingImage] = useState(false);
   const [confirmation, setConfirmation] = useState<"box" | "sheet" | null>(null);
   const [historyCharacter, setHistoryCharacter] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -167,6 +169,21 @@ export default function WritingPractice({ characters, onClose }: { characters: P
       setMessage("Backup downloaded. Keep it somewhere you can find again.");
     } catch { setMessage("Could not export saved sheets. Keep this page open and retry."); }
   };
+  const exportImage = async () => {
+    const value = current.current;
+    if (!value || exportingImage) return;
+    setExportingImage(true);
+    try {
+      const snapshot = structuredClone(value);
+      const blob = await renderSheetImage(snapshot);
+      const url = URL.createObjectURL(blob); const link = document.createElement("a");
+      link.href = url; link.download = `hanzi-practice-${snapshot.practiceDate || localDate()}.png`;
+      document.body.appendChild(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      setMessage("Practice image downloaded. Attach the PNG to your homework. Use Export backup to keep an editable copy.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not export the practice image. Please try again."); }
+    finally { setExportingImage(false); }
+  };
   const importBackup = async (file: File) => {
     if (!safeToLeave()) return;
     try {
@@ -191,7 +208,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
     </div>
     <div className="copybook-navigation">
       <div className="practice-tabs"><button className={view === "paper" ? "active" : ""} onClick={() => { if (safeToLeave()) setView("paper"); }}><PencilLine /> Paper</button><button className={view === "history" ? "active" : ""} onClick={() => { if (safeToLeave()) setView("history"); }}><History /> History</button></div>
-      <div className="backup-actions"><button onClick={exportBackup} disabled={loading || pending.current > 0}><Download /> Export</button><button onClick={() => fileInput.current?.click()} disabled={loading || pending.current > 0}><Upload /> Import</button><input ref={fileInput} type="file" accept=".json,application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.target.value = ""; }} /></div>
+      <div className="backup-actions"><button onClick={exportBackup} disabled={loading || pending.current > 0}><Download /> Export backup</button><button onClick={() => fileInput.current?.click()} disabled={loading || pending.current > 0}><Upload /> Import backup</button><input ref={fileInput} type="file" accept=".json,application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); event.target.value = ""; }} /></div>
     </div>
     {message && <div className={`practice-message ${saveState === "error" ? "error" : ""}`} role="status">{message}{saveState === "error" && sheet && <button onClick={() => persist(current.current!)}>Retry saving</button>}</div>}
     {loading ? <p className="practice-muted">Opening your practice pages…</p> : view === "history" ? <>
@@ -225,6 +242,7 @@ export default function WritingPractice({ characters, onClose }: { characters: P
         </>}
         <label className="practice-check"><input type="checkbox" checked={construction} onChange={(event) => setConstruction(event.target.checked)} /> Stroke examples</label>
         <button disabled={!selectedRow || !selected || !hasInk(selectedRow.boxes[selected.box])} className={review ? "active" : ""} onClick={() => setReview((value) => !value)}>Compare with model</button>
+        <button onClick={() => void exportImage()} disabled={exportingImage || emptyBoxes(sheet)}><Download /> {exportingImage ? "Creating image…" : "Export image"}</button>
         {editable && <button className="finish-sheet" disabled={emptyBoxes(sheet) || saveState !== "saved"} onClick={() => replace({ ...current.current!, status: "finished", lastSavedAt: new Date().toISOString() })}><Check /> Finish sheet</button>}
       </div>
       <p className="paper-instruction">{editable ? "Write across the boxes. Tap a box to compare it with the model. Scroll outside the writing boxes." : "This finished sheet is kept as you wrote it. Tap a filled box to compare it with the model."}</p>

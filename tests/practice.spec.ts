@@ -147,7 +147,7 @@ test("backup imports do not overwrite sheets; rejected imports leave records unc
   await expect(page.getByText("Saved on this device", { exact: true })).toBeVisible();
   const original = await records(page);
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export backup", exact: true }).click();
   const download = await downloadPromise;
   await download.saveAs(`test-results/${test.info().project.name}-backup.json`);
   await page.locator('input[type="file"]').setInputFiles(`test-results/${test.info().project.name}-backup.json`);
@@ -156,6 +156,44 @@ test("backup imports do not overwrite sheets; rejected imports leave records unc
   await page.locator('input[type="file"]').setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from('{"format":"wrong"}') });
   await expect(page.getByText("Choose a Hanzi Tree handwriting backup (version 1).")).toBeVisible();
   expect(await records(page)).toEqual(original);
+});
+
+for (const layout of ["copybook", "blank"] as const) test(`${layout} homework PNG includes off-screen handwriting and can be exported from a finished sheet`, async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open writing practice" }).click();
+  await page.getByLabel("Characters to practice").fill("人");
+  await page.getByLabel("Rows per character").selectOption("12");
+  if (layout === "blank") await page.getByRole("button", { name: "Blank boxes", exact: false }).click();
+  await page.getByRole("button", { name: "Open the paper" }).click();
+  await expect.poll(async () => (await records(page))[0].rows.every((row: { reference?: unknown }) => row.reference)).toBe(true);
+  await penStroke(page.locator('canvas[aria-label="Write 人, box 6"]').last());
+  await expect(page.getByRole("button", { name: "Finish sheet" })).toBeEnabled();
+  await page.getByRole("button", { name: "Finish sheet" }).click();
+  await expect.poll(async () => (await records(page))[0].status).toBe("finished");
+  const before = await records(page);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export image", exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^hanzi-practice-\d{4}-\d{2}-\d{2}\.png$/);
+  const path = `test-results/${test.info().project.name}-${layout}-homework.png`;
+  await download.saveAs(path);
+  const png = readFileSync(path);
+  expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([layout === "copybook" ? 1700 : 1500, 2650]);
+  const pixels = await page.evaluate(async ({base64, x}) => {
+    const image = new Image(); image.src = `data:image/png;base64,${base64}`; await image.decode();
+    const canvas = document.createElement("canvas"); canvas.width = image.width; canvas.height = image.height;
+    const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+    const countInk = (y: number) => {
+      const data = context.getImageData(x, y + 8, 184, 184).data; let count = 0;
+      for (let index = 0; index < data.length; index += 4) if (data[index] < 80 && data[index + 1] < 80 && data[index + 2] < 80) count++;
+      return count;
+    };
+    return { first: countInk(180), last: countInk(2380), background: Array.from(context.getImageData(5, 5, 1, 1).data) };
+  }, {base64: png.toString("base64"), x: layout === "copybook" ? 1448 : 1248});
+  expect(pixels.first).toBe(0); expect(pixels.last).toBeGreaterThan(50);
+  expect(pixels.background).toEqual([255, 255, 255, 255]);
+  expect(await records(page)).toEqual(before);
 });
 
 test("Safari stylus touch input records force once and ignores palm touches in Pencil mode", async ({ page }) => {
