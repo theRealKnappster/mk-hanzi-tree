@@ -13,6 +13,7 @@ import {
 import hsk1WordsData from "./data/hsk1.json";
 import hsk2WordsData from "./data/hsk2.json";
 import WritingPractice from "./practice/WritingPractice";
+import AppBackup, { PROGRESS_KEY } from "./AppBackup";
 
 type Pathway = "writing" | "sound" | "meaning";
 type WordPathway = Exclude<Pathway, "writing">;
@@ -53,7 +54,7 @@ type WordProgress = Record<Pathway, number> & {
   correct: Record<Pathway, number>;
 };
 
-type StoredProgress = {
+export type StoredProgress = {
   introduced: number;
   sessions: number;
   totalPrompts: number;
@@ -83,7 +84,7 @@ type CharacterJson = {
   radStrokes?: number[];
 };
 
-const STORAGE_KEY = "mk-hanzi-tree-progress-v1";
+const STORAGE_KEY = PROGRESS_KEY;
 const LEGACY_STORAGE_SUFFIX = "-hanzi-lab-progress-v1";
 const SESSION_LENGTH = 12;
 const APP_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -705,6 +706,7 @@ export default function Home() {
             <div><strong>{Object.keys(progress.words).length}</strong><span>words encountered</span></div>
             <div><strong>{progress.sessions}</strong><span>chapters crossed</span></div>
           </div>
+          <AppBackup progress={progress} onImport={(restored) => { setProgress(restored); setStarted(false); setSession([]); setStep(0); setFeedback(null); }} />
           <div className="pathway-bars">
             {pathwayAverages.map(({ pathway, percent }) => (
               <div className="pathway-row" key={pathway}>
@@ -737,6 +739,7 @@ export default function Home() {
           <button className="primary-button" onClick={begin}>{progress.sessions ? "Return to the road" : "Begin the journey"}</button>
           <p className="session-note">12 challenges · no heavenly bureaucracy</p>
           <button className="foundation-link" onClick={() => setShowWritingPractice(true)}><PencilLine /> Open writing practice</button>
+          <button className="foundation-link" onClick={() => setShowProgress(true)}>Back up or transfer progress</button>
           <button className="foundation-link" onClick={() => setShowGuide(true)}><BookOpen /> Open the sacred scrolls</button>
         </section>
       ) : completed ? (

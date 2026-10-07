@@ -277,3 +277,11 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+.complete-backup { margin: 24px 0; padding: 20px; border: 1px solid var(--line, #b8b0a2); border-radius: 12px; text-align: left; }
+.complete-backup p { line-height: 1.5; }
+.backup-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.backup-controls button { min-height: 44px; }
+.backup-preview { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line, #b8b0a2); }
+.backup-preview table { width: 100%; border-collapse: collapse; }
+.backup-preview th, .backup-preview td { padding: 8px; text-align: left; border-bottom: 1px solid var(--line, #b8b0a2); }

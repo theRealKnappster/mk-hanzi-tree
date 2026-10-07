@@ -1,4 +1,4 @@
-const CACHE = "mk-hanzi-tree-v11";
+const CACHE = "mk-hanzi-tree-v12";
 const BASE = new URL("./", self.registration.scope).pathname.replace(/\/$/, "");
 const CORE = [
   `${BASE}/`,
