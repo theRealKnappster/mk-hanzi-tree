@@ -67,6 +67,7 @@ export function parseBackup(text: string): PracticeSheet[] {
         if (!Array.isArray(box) || box.length > 1000) throw new Error("The backup contains an invalid writing box.");
         for (const stroke of box) {
           if (!object(stroke) || typeof stroke.id !== "string" || !timestamp(stroke.startedAt) || !Array.isArray(stroke.points) || stroke.points.length > 100_000) throw new Error("The backup contains an invalid stroke.");
+          if ((stroke.style !== undefined && stroke.style !== "pen" && stroke.style !== "brush") || (stroke.sensitivity !== undefined && (!number(stroke.sensitivity) || Number(stroke.sensitivity) < 1 || Number(stroke.sensitivity) > 3))) throw new Error("The backup contains invalid brush settings.");
           let previousTime = -1;
           for (const point of stroke.points) {
             if (!object(point) || ![point.x, point.y, point.pressure, point.time].every(number) || Number(point.x) < 0 || Number(point.x) > 1 || Number(point.y) < 0 || Number(point.y) > 1 || Number(point.pressure) < 0 || Number(point.pressure) > 1 || Number(point.time) < previousTime || Number(point.time) < 0) throw new Error("The backup contains invalid ink samples.");

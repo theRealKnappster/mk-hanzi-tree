@@ -2,6 +2,11 @@ import type { InkPoint, InkStroke, Reference } from "./types";
 
 export const clamp = (value: number, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 export const pressureWidth = (pressure: number) => 0.007 + 0.038 * Math.pow(clamp(pressure), 0.7);
+// Brush ink uses a wider range and reaches full width with comfortable pressure.
+// Missing style means the original pen, keeping older sheets visually unchanged.
+export const strokeWidth = (pressure: number, stroke: Pick<InkStroke, "style" | "sensitivity">) => stroke.style === "brush"
+  ? 0.0025 + 0.12 * Math.pow(clamp(pressure * clamp(stroke.sensitivity ?? 2, 1, 3)), 1.15)
+  : pressureWidth(pressure);
 
 export function inkPoint(clientX: number, clientY: number, pressure: number, elapsed: number, rect: Pick<DOMRect, "left" | "top" | "width" | "height">): InkPoint {
   return { x: clamp((clientX - rect.left) / rect.width), y: clamp((clientY - rect.top) / rect.height), pressure: clamp(pressure), time: Math.max(0, elapsed) };
@@ -13,14 +18,14 @@ export function drawInk(context: CanvasRenderingContext2D, strokes: InkStroke[],
   for (const stroke of strokes) {
     if (!stroke.points.length) continue;
     let previous = stroke.points[0];
-    let radius = pressureWidth(previous.pressure) * size / 2;
+    let radius = strokeWidth(previous.pressure, stroke) * size / 2;
     const stamp = (x: number, y: number, r: number) => {
       context.beginPath(); context.arc(x * size, y * size, r, 0, Math.PI * 2); context.fill();
     };
     stamp(previous.x, previous.y, radius);
     for (let index = 1; index < stroke.points.length; index++) {
       const point = stroke.points[index];
-      const nextRadius = radius * 0.3 + pressureWidth(point.pressure) * size / 2 * 0.7;
+      const nextRadius = radius * 0.3 + strokeWidth(point.pressure, stroke) * size / 2 * 0.7;
       const distance = Math.hypot(point.x - previous.x, point.y - previous.y) * size;
       const steps = Math.max(1, Math.ceil(distance / Math.max(0.5, Math.min(radius, nextRadius) * 0.5)));
       for (let step = 1; step <= steps; step++) {

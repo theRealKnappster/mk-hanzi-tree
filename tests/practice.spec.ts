@@ -73,6 +73,26 @@ test("pressure, autosave, undo/redo, reload and resizing preserve ink and existi
   expect(errors).toEqual([]);
 });
 
+test("brush and fine pen retain their own appearance when changing pressure settings and reloading", async ({ page }) => {
+  await openPractice(page);
+  const canvas = page.locator('canvas[aria-label="Write 人, box 1"]');
+  await expect(page.getByRole("button", { name: "Brush", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await penStroke(canvas);
+  await expect.poll(async () => (await records(page))[0].rows[0].boxes[0].length).toBe(1);
+  await page.getByLabel("Brush pressure response").selectOption("3");
+  await penStroke(canvas);
+  await expect.poll(async () => (await records(page))[0].rows[0].boxes[0].length).toBe(2);
+  await page.getByRole("button", { name: "Fine pen", exact: true }).click();
+  await penStroke(canvas);
+  await expect.poll(async () => (await records(page))[0].rows[0].boxes[0].length).toBe(3);
+  const original = (await records(page))[0].rows[0].boxes[0];
+  expect(original.map((stroke: { style: string; sensitivity?: number }) => [stroke.style, stroke.sensitivity])).toEqual([["brush", 2], ["brush", 3], ["pen", undefined]]);
+  await page.reload();
+  await page.getByRole("button", { name: "Open writing practice" }).click();
+  await page.locator(".draft-list button").first().click();
+  expect((await records(page))[0].rows[0].boxes[0]).toEqual(original);
+});
+
 test("finished sheets are read-only; another session appears in same-character comparisons", async ({ page }) => {
   await openPractice(page, true);
   await penStroke(page.locator('canvas[aria-label="Write 人, box 2"]'));
