@@ -60,9 +60,11 @@ test("pressure, autosave, undo/redo, reload and resizing preserve ink and existi
   await expect.poll(async () => (await records(page))[0].rows[0].boxes[0].length).toBe(0);
   await page.getByRole("button", { name: "Redo last ink edit" }).click();
   await expect.poll(async () => (await records(page))[0].rows[0].boxes[0].length).toBe(1);
+  const compareScroll = await page.evaluate(() => window.scrollY);
   await page.getByRole("button", { name: "Compare with model", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Compare with the model" })).toBeVisible();
   await page.getByRole("button", { name: "Close comparison" }).click();
+  expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(compareScroll, 0);
   await page.reload();
   await page.getByRole("button", { name: "Open writing practice" }).click();
   await page.locator(".draft-list button").first().click();

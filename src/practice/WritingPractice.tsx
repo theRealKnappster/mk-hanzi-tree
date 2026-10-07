@@ -34,11 +34,14 @@ function ReviewBox({ row, box, onClose }: { row: PracticeRow; box: number; onClo
     const element = dialog.current;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
+    const scrollX = window.scrollX, scrollY = window.scrollY;
     element?.showModal();
     document.body.style.overflow = "hidden";
+    window.scrollTo(scrollX, scrollY);
     return () => {
       element?.close(); document.body.style.overflow = previousOverflow;
       previousFocus?.focus({ preventScroll: true });
+      window.scrollTo(scrollX, scrollY);
     };
   }, []);
   const strokes = row.boxes[box];
