@@ -39,6 +39,12 @@ Sheets autosave after completed strokes. Practice starts on the first mark, with
 
 Handwriting is stored in IndexedDB database `mk-hanzi-tree-handwriting-v1`, separately from the existing `mk-hanzi-tree-progress-v1` localStorage record. Reference geometry is saved with each row. Records stay in the current browser and do not automatically sync. **Export** downloads a JSON backup containing ink, pressure, timestamps, and model snapshots. **Import** validates the backup and never replaces existing sheets; conflicting versions are retained as separate copies. Clearing website data removes local records. A browser or device shutdown can lose an unfinished stroke or a save that has not completed.
 
+### Complete backup and Safari / Home Screen transfer
+
+Open **Back up or transfer progress** on the home screen (also available in **View progress**). **Export complete backup** saves lesson progress plus all saved handwriting sheets in one JSON file. In the destination Home Screen app, choose **Import complete backup**, select that file, review the totals, and choose **Apply import**. Import replaces the destination lesson snapshot; it does not add counters together. Existing handwriting is retained, identical sheets are skipped, and changed copies are added separately. The preview offers a backup of the destination before applying. Old handwriting-only backups still use Writing practice’s Import backup.
+
+Safari and the standalone Home Screen app have separate local storage. This is a manual transfer, not synchronization. Use one version afterward, or repeat export/import deliberately. Complete backups include finished sheets, drafts, pressure samples, dates, and saved model geometry. A failed handwriting transaction restores the previous lesson record.
+
 ### Checks
 
 ```bash
