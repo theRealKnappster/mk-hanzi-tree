@@ -1,0 +1,127 @@
+.copybook-module { margin: 30px auto 0; max-width: 1080px; }
+.copybook-header, .copybook-navigation, .practice-section-heading, .paper-heading, .paper-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.copybook-header { align-items: flex-start; }
+.copybook-header h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.05em; }
+.copybook-header p:not(.eyebrow) { color: var(--muted); margin: 10px 0 0; }
+.copybook-module h2 { margin: 0; font-size: 1.45rem; letter-spacing: -.025em; }
+.copybook-module h3 { font-size: 1.1rem; }
+.copybook-module button { cursor: pointer; }
+.copybook-module button:disabled { opacity: .4; cursor: default; }
+.copybook-navigation { padding: 20px 0; border-bottom: 1px solid var(--faint); margin-bottom: 24px; flex-wrap: wrap; }
+.practice-tabs, .backup-actions, .tool-group { display: flex; gap: 6px; }
+.practice-tabs button, .backup-actions button, .paper-toolbar button, .practice-button, .paper-footer button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 13px; min-height: 44px; border: 1px solid var(--faint); border-radius: 12px; background: var(--card); color: var(--ink); font-weight: 600; font-size: .86rem; }
+.practice-tabs button.active, .paper-toolbar button.active, .paper-layout-options button.active { border-color: var(--sage); background: color-mix(in srgb, var(--sage) 12%, var(--paper)); }
+.copybook-module button svg { width: 17px; height: 17px; flex-shrink: 0; }
+.practice-button.primary { background: var(--ink); color: var(--paper); }
+.paper-setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .85fr); gap: 50px; padding: 10px 0 24px; }
+.paper-setup h2 { margin-bottom: 24px; }
+.paper-setup label:not(.practice-check), .history-filter, .date-comparison-pane > label { display: flex; flex-direction: column; gap: 8px; font-size: .86rem; font-weight: 650; margin-bottom: 20px; }
+.copybook-module input:not([type=checkbox]), .copybook-module select { border: 1px solid var(--faint); border-radius: 10px; padding: 11px 12px; min-height: 44px; font: inherit; background: var(--paper); color: var(--ink); max-width: 100%; }
+.paper-setup input:not([type=checkbox]) { font: 1.6rem "Kaiti SC", "STKaiti", serif; letter-spacing: .1em; }
+.paper-layout-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.paper-layout-options button { text-align: left; display: flex; flex-direction: column; gap: 7px; padding: 17px; border: 1px solid var(--faint); border-radius: 14px; color: var(--ink); background: var(--card); }
+.paper-layout-options span { font-size: .78rem; color: var(--muted); }
+.practice-check { display: inline-flex; align-items: center; gap: 8px; font-size: .83rem; font-weight: 500; min-height: 44px; }
+.practice-check input { width: 18px; height: 18px; accent-color: var(--sage); }
+.paper-setup .practice-button.primary { display: flex; margin-top: 20px; width: 100%; }
+.paper-setup aside { line-height: 1.6; }
+.practice-muted { color: var(--muted); font-size: .86rem; line-height: 1.55; }
+.paper-sample { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--faint); border-left: 1px solid var(--faint); }
+.paper-sample span { aspect-ratio: 1; display: grid; place-items: center; font: 3.5rem/1 "Kaiti SC", "STKaiti", serif; border-right: 1px solid var(--faint); border-bottom: 1px solid var(--faint); background: var(--card); }
+.faint { opacity: .19; }
+.draft-list { margin-top: 26px; }
+.draft-list button { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; margin: 8px 0; padding: 12px; border: 1px solid var(--faint); border-radius: 10px; background: var(--card); color: var(--ink); }
+.draft-list small { color: var(--muted); }
+.paper-heading { flex-wrap: wrap; margin-bottom: 15px; }
+.paper-heading > div { display: flex; flex-direction: column; gap: 4px; }
+.paper-heading > div span { color: var(--muted); font-size: .8rem; }
+.save-indicator { color: var(--sage); font-size: .76rem; }
+.save-indicator.error { color: var(--accent); font-weight: 700; }
+.paper-toolbar { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 12px; border: 1px solid var(--faint); background: var(--card); border-radius: 16px; }
+.paper-toolbar button { background: var(--paper); padding: 8px 10px; font-size: .78rem; }
+.paper-toolbar .finish-sheet { color: var(--sage); margin-left: auto; }
+.input-mode-label { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--muted); }
+.input-mode-label select { padding: 5px 8px; font-size: .76rem; }
+.paper-instruction { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+.practice-paper-scroll { overflow-x: auto; padding: 3px; }
+.practice-paper { min-width: 700px; border: 1px solid var(--faint); background: var(--card); }
+.copybook-row + .copybook-row { border-top: 1px solid var(--faint); }
+.copybook-row-main { display: grid; grid-template-columns: 100px minmax(0, 1fr); }
+.copybook-row-label { padding: 10px 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 4px; border-right: 1px solid var(--faint); }
+.copybook-row-label strong { font: 1.7rem/1.1 "Kaiti SC", "STKaiti", serif; }
+.copybook-row-label span { font-size: .78rem; font-weight: 600; }
+.copybook-row-label small { font-size: .64rem; line-height: 1.35; color: var(--muted); }
+.copybook-boxes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); position: relative; }
+.copybook-boxes.blank-layout { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.practice-box { position: relative; aspect-ratio: 1; min-width: 0; overflow: hidden; color: var(--ink); }
+.copybook-boxes > .practice-box + .practice-box { border-left: 1px solid var(--faint); }
+.practice-box.with-guides::before, .practice-box.with-guides::after { position: absolute; content: ""; z-index: 0; opacity: .45; pointer-events: none; }
+.practice-box.with-guides::before { top: 50%; left: 0; width: 100%; border-top: 1px dashed var(--faint); }
+.practice-box.with-guides::after { left: 50%; top: 0; height: 100%; border-left: 1px dashed var(--faint); }
+.practice-box.selected { box-shadow: inset 0 0 0 2px var(--sage); }
+.practice-ink { position: relative; z-index: 2; display: block; width: 100%; height: 100%; aspect-ratio: 1; touch-action: none; -webkit-user-select: none; user-select: none; color: var(--ink); }
+.practice-ink.read-only { touch-action: auto; }
+.reference-box > svg, .model-overlay svg { display: block; width: 100%; height: 100%; }
+.reference-box { display: grid; place-items: center; }
+.model-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.reference-fallback { display: grid; place-items: center; width: 100%; height: 100%; font: 4rem/1 "Kaiti SC", "STKaiti", serif; }
+.reference-loader { display: none; }
+.box-selector { position: absolute; z-index: 3; right: 2px; bottom: 1px; height: 24px; min-width: 24px; padding: 2px; border: 0; background: var(--paper); opacity: .8; color: var(--muted); font-size: .6rem; border-radius: 3px; }
+.box-selector[aria-pressed=true] { color: var(--sage); font-weight: 800; }
+.construction-strip { display: flex; flex-wrap: wrap; padding: 7px 10px; border-bottom: 1px solid var(--faint); gap: 6px; }
+.construction-strip > span { width: 40px; display: flex; flex-direction: column; align-items: center; }
+.construction-strip svg { width: 36px; height: 36px; }
+.construction-strip small { font-size: .54rem; color: var(--muted); }
+.paper-footer { margin: 14px 0 20px; font-size: .8rem; color: var(--muted); }
+.paper-footer button { font-size: .76rem; }
+.practice-storage-note { font-size: .72rem; color: var(--muted); line-height: 1.5; margin: 30px 0 15px; }
+.handwriting-review, .date-comparison { padding: 22px; margin-top: 24px; border: 1px solid var(--faint); border-radius: 18px; background: var(--card); }
+.practice-section-heading .eyebrow { font-size: .63rem; margin-bottom: 8px; }
+.review-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 20px; margin: 22px 0; justify-content: center; }
+.review-pair > div > span { display: block; text-align: center; font-size: .8rem; color: var(--muted); margin-bottom: 8px; }
+.review-pair .practice-box { border: 1px solid var(--faint); background: var(--paper); }
+.shape-observations { max-width: 660px; margin: 0 auto; line-height: 1.5; font-size: .9rem; }
+.shape-observations p { font-size: .83rem; color: var(--muted); }
+.shape-observations small { color: var(--muted); font-size: .72rem; }
+.observation-highlight { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; color: var(--accent); pointer-events: none; }
+.history-filter { max-width: 240px; margin-top: 20px; }
+.sheet-history { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.sheet-card { display: block; text-align: left; border: 1px solid var(--faint); border-radius: 16px; padding: 18px; background: var(--card); color: var(--ink); }
+.sheet-card:hover { border-color: var(--sage); }
+.sheet-card-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .86rem; }
+.sheet-card-heading span { color: var(--sage); font-size: .74rem; }
+.sheet-preview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; pointer-events: none; }
+.sheet-preview > div > span { display: block; text-align: center; font-size: .8rem; margin-top: 5px; color: var(--muted); }
+.sheet-preview .practice-box { background: var(--paper); border: 1px solid var(--faint); }
+.sheet-card p { margin-bottom: 0; font-size: .85rem; }
+.sheet-card p span { color: var(--muted); font-size: .73rem; }
+.practice-empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+.practice-empty > svg { width: 36px; height: 36px; margin-bottom: 14px; color: var(--sage); }
+.date-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+.history-repetitions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.history-repetitions figure { margin: 0; }
+.history-repetitions .practice-box { border: 1px solid var(--faint); background: var(--paper); }
+.history-repetitions figcaption { text-align: center; font-size: .65rem; color: var(--muted); margin-top: 5px; }
+.comparison-model-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; font-size: .78rem; color: var(--muted); }
+.comparison-model-choice select { font-size: .78rem; }
+.practice-message { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 15px 0; padding: 12px 16px; border: 1px solid var(--sage); border-radius: 12px; color: var(--ink); background: color-mix(in srgb, var(--sage) 8%, var(--paper)); font-size: .83rem; line-height: 1.5; }
+.practice-message.error { border-color: var(--accent); }
+.practice-message button { padding: 10px; border: 1px solid var(--faint); border-radius: 10px; color: var(--ink); background: var(--paper); white-space: nowrap; }
+.practice-modal-backdrop { position: fixed; inset: 0; z-index: 100; background: #0008; display: grid; place-items: center; padding: 24px; }
+.practice-modal { width: min(100%, 480px); padding: 28px; border-radius: 20px; background: var(--paper); box-shadow: var(--shadow); }
+.practice-modal p { color: var(--muted); line-height: 1.5; }
+.practice-modal > div { display: flex; gap: 10px; margin-top: 22px; }
+@media (max-width: 720px) {
+  .paper-setup { grid-template-columns: 1fr; gap: 28px; }
+  .paper-setup aside { max-width: 450px; }
+  .copybook-header .eyebrow { font-size: .65rem; }
+  .sheet-history { grid-template-columns: 1fr; }
+  .practice-section-heading { flex-wrap: wrap; }
+  .paper-heading > .save-indicator { width: 100%; }
+  .handwriting-review, .date-comparison { padding: 16px; }
+  .history-repetitions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .date-comparison-grid { gap: 10px; }
+  .date-comparison-pane > label { font-size: .76rem; }
+  .date-comparison-pane select { font-size: .68rem; padding: 6px; }
+  .paper-toolbar .finish-sheet { margin-left: 0; }
+}

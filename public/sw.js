@@ -1,4 +1,4 @@
-const CACHE = "mk-hanzi-tree-v4";
+const CACHE = "mk-hanzi-tree-v5";
 const BASE = new URL("./", self.registration.scope).pathname.replace(/\/$/, "");
 const CORE = [
   `${BASE}/`,
@@ -16,7 +16,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))));
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith("mk-hanzi-tree-") && key !== CACHE).map((key) => caches.delete(key)))));
   self.clients.claim();
 });
 
